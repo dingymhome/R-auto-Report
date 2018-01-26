@@ -1,0 +1,63 @@
+
+---
+title: "plot everyone's value"
+latex_engine: xelatex
+output: pdf_document
+header-includes:
+- \usepackage{xeCJK} 
+---
+
+```{r echo=FALSE, fig.width=8, dev='cairo_pdf'}
+# library(ggplot2)
+library(Cairo)
+options(stringsAsFactors = F)
+
+filepath = 'dat.csv'
+filepath2 = 'avg_data.csv'
+dat = read.csv(filepath, header = T)
+avg_data = read.csv(filepath2, header = T)
+dat$date = as.Date(dat$date)
+avg_data$date = as.Date(avg_data$date)
+value_max = quantile(dat$value, 0.95)  # 85%分位点
+value_min = 0                          # ylim = c(0, value_max)
+
+persons = unique(dat$ep_ygbh)
+for(p0 in persons)
+{
+  dat_tmp = dat[dat$ep_ygbh == p0, ]
+  dat1 = cbind(dat_tmp[, c('date', 'value')], type = 'value')
+  dat2 = cbind(avg_data[, c('date', 'avg_value')], type = 'avg_value')
+  colnames(dat2) = colnames(dat1)
+  dat3 = rbind(dat1, dat2)
+
+  start = min(dat_tmp$date)
+  end = max(dat_tmp$date)
+  len = nrow(dat_tmp)
+  spacechar = paste(rep(' ', 4), collapse = '')
+  title1 = paste(unique(dat_tmp[, c('name', 'dept')]), collapse = '-')
+  title2 = paste(start, end, sep = ' to ')
+  title = paste(title1, spacechar, title2, spacechar, len, ' days', sep ='')
+  
+  value_max2 = ifelse(max(dat_tmp$value) < value_max, value_max, 
+                      max(dat_tmp$value) + 200)
+  
+  print(title)
+  labels = paste(avg_data$date, ' ')
+  labels[1:length(labels) %% 2 == 0] = '' 
+  
+  # print(par("usr")[3]*.97)
+  plot(avg_data$date, avg_data$avg_value, type = 'b', xaxt = 'n',
+       col = 'red', xlab = 'date', ylab = 'value', ylim = c(value_min, value_max2))
+  axis(1, at=NULL, labels=F)
+  text(x = avg_data$date, par("usr")[3]*.97, labels = labels, 
+       srt = 45, pos = 1, xpd = TRUE, cex=.7)
+  grid(max(avg_data$date) - min(avg_data$date) + 2, NA, lwd = 0.5)
+  lines(dat1$date, dat1$value, type = 'b', col = 'blue')
+}
+  # title = title, labs(x = 'date')
+
+  # p = ggplot(dat3, aes(date, value, col = type, group = type))
+  # plot(p + geom_point() + geom_line() + ylim(value_min, value_max2)
+  #      + theme(text=element_text(family="Garamond", size=14)))
+
+```
